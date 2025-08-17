@@ -1,65 +1,53 @@
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
-
-// import authRoutes from "./routes/auth.js";
-// import { register } from "./controllers/auth.js";
+import path from "path";
+import { fileURLToPath } from "url";
 import connectDB from "./mongoDB/connect.js";
-// import { verifyToken } from "./middleware/auth.js";
-// import { createTask, getUserTasks, updateTask, deleteTask } from "./controllers/task.js";
+import { loadModules } from "./server/utils/moduleLoader.js";
 
-// App setup
+// -------------------- Setup --------------------
 const myEnv = {};
 dotenv.config({ processEnv: myEnv });
 const app = express();
 
-// CORS Configuration: Allow only specific frontend origin
-// const allowedOrigins = ["https://trello-frontend-delta.vercel.app"];
-// const corsOptions = {
-//   origin: allowedOrigins,
-//   methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"], // Allow specific methods
-//   credentials: true, // Allow credentials (cookies, authorization headers)
-//   allowedHeaders: ["Content-Type", "Authorization"], // Allow specific headers
-// };
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const modulesDir = path.join(__dirname, "server/modules");
 
-// // Apply CORS middleware globally
-// app.use(cors(corsOptions));
+// -------------------- Middleware --------------------
+function setupMiddleware(app) {
+  app.use(express.json());
+  app.use(express.urlencoded({ limit: "30mb", extended: true }));
+  app.use(helmet());
+  app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
+  app.use(morgan("common"));
+}
+setupMiddleware(app);
 
-// Middleware
-app.use(express.json());
-app.use(helmet());
-app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
-app.use(morgan("common"));
-app.use(express.urlencoded({ limit: "30mb", extended: true }));
+// -------------------- Vercel Test Route --------------------
+app.get("/", (req, res) => res.json("Hello"));
 
-// Handle preflight OPTIONS requests
-// app.options("*", cors(corsOptions));  // Preflight requests
-
-// Vercel route
-app.get("/", (req, res) => {
-  res.json("Hello");
-});
-
-// Routes
-// app.post("/auth/register", register);
-// app.post("/:userId/create-task", verifyToken, createTask);
-// app.patch("/:userId/update-task", verifyToken, updateTask);
-// app.get("/:userId/get-tasks", verifyToken, getUserTasks);
-// app.delete("/delete-task/:taskId", verifyToken, deleteTask);
-// app.use("/auth", authRoutes);
-
-// Start server
+// -------------------- Server Startup --------------------
 const startServer = async () => {
   try {
+    // 1️⃣ Connect DB
     await connectDB(myEnv.MONGODB_URL);
+
+    // 2️⃣ Load all modules (models + routes)
+    const models = {};
+    await loadModules(modulesDir, app, models);
+
+    // 3️⃣ Start server
     const PORT = myEnv.PORT || 3001;
     app.listen(PORT, () =>
       console.log(`🚀 SERVER LISTENING AT http://localhost:${PORT} 🚀`)
     );
-  } catch (error) {
-    console.error("Failed to start server:", error.message);
+  } catch (err) {
+    console.error("❌ Failed to start server:", err.message);
+    process.exit(1);
   }
 };
+
 startServer();
