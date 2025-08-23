@@ -1,15 +1,20 @@
 import express from "express";
 
-import { login, register } from "./user-controller.js";
 import { validate } from "../../../middleware/validate.js";
 import { loginSchema, registerSchema } from "./user-validation.js";
+import { controllers } from "../../modulesLoader.js";
 
-export default (app) => {
-  const router = express.Router();
+const router = express.Router();
 
-  // Routes with Joi validation middleware
-  router.post("/register", validate(registerSchema), register);
-  router.post("/login", validate(loginSchema), login);
+// Routes with Joi validation middleware
+router.post(
+  "/register",
+  validate(registerSchema),
+  controllers.UserController.register
+);
+router.post("/login", validate(loginSchema), controllers.UserController.login);
 
-  app.use("/user", router);
+export default {
+  indexRoute: "/user",
+  router,
 };
