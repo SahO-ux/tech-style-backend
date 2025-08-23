@@ -6,7 +6,7 @@ export const auth = (req, res, next) => {
 
   if (!token) return res.status(403).json({ message: "No token" });
   try {
-    const payload = jwt.verify(token, myEnv.JWT_ACCESS_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
     req.user = { id: payload.sub, role: payload.role };
     return next();
   } catch {

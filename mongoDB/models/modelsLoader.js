@@ -3,7 +3,9 @@ import path from "path";
 import { pathToFileURL } from "url";
 import mongoose from "mongoose";
 
-export async function loadModules(modulesDir, app, modelsContainer) {
+import { setModel } from "./utils/modelsContainer.js";
+
+export async function loadModels(modulesDir, app) {
   const folders = fs.readdirSync(modulesDir);
 
   for (const folder of folders) {
@@ -23,7 +25,8 @@ export async function loadModules(modulesDir, app, modelsContainer) {
           throw new Error(`Invalid model export in ${file}`);
         }
 
-        modelsContainer[model.modelName] = model;
+        setModel(model.modelName, model);
+
         console.log(`✅ Loaded model: ${model.modelName}`);
       } catch (err) {
         console.error(`❌ Failed to load model ${file}:`, err.message);
@@ -38,9 +41,10 @@ export async function loadModules(modulesDir, app, modelsContainer) {
         const moduleUrl = pathToFileURL(indexFile).href;
         const { default: mod } = await import(moduleUrl);
 
-        if (mod.routes) {
-          mod.routes(app);
-          console.log(`✅ Loaded routes from module: ${folder}`);
+        if (typeof mod === "function") {
+          // Call the module function with the app instance
+          mod(app);
+          console.log(`🛣 Loaded routes from module: ${folder}`);
         }
       } catch (err) {
         console.error(
