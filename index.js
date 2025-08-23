@@ -4,12 +4,12 @@ import helmet from "helmet";
 import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
+
 import connectDB from "./mongoDB/connect.js";
-import { loadModules } from "./server/utils/moduleLoader.js";
+import { loadModels } from "./mongoDB/models/modelsLoader.js";
 
 // -------------------- Setup --------------------
-const myEnv = {};
-dotenv.config({ processEnv: myEnv });
+dotenv.config();
 const app = express();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,14 +33,13 @@ app.get("/", (req, res) => res.json("Hello"));
 const startServer = async () => {
   try {
     // 1️⃣ Connect DB
-    await connectDB(myEnv.MONGODB_URL);
+    await connectDB(process.env.MONGODB_URL);
 
     // 2️⃣ Load all modules (models + routes)
-    const models = {};
-    await loadModules(modulesDir, app, models);
+    await loadModels(modulesDir, app);
 
     // 3️⃣ Start server
-    const PORT = myEnv.PORT || 3001;
+    const PORT = process.env.PORT || 3001;
     app.listen(PORT, () =>
       console.log(`🚀 SERVER LISTENING AT http://localhost:${PORT} 🚀`)
     );

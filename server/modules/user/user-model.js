@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import validator from "validator";
 
 const accountRoleEnums = ["admin", "staff"];
 const defaultRole = "staff";
@@ -9,17 +11,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       min: 2,
-      max: 50,
+      max: 30,
       trim: true,
       index: true,
-      default: null,
       sparse: true,
     },
     lastName: {
       type: String,
       required: true,
       min: 2,
-      max: 50,
+      max: 30,
       trim: true,
       default: null,
     },
@@ -30,7 +31,9 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       validate: {
-        validator: (value) => validator.isEmail(value),
+        validator: function (value) {
+          return validator.isEmail(value);
+        },
         message: (props) => `${props.value} is not a valid email address`,
       },
     },
@@ -52,5 +55,23 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Pre-save hook to hash password before saving
+userSchema.pre("save", async function (next) {
+  // Below "this" refers to the mongo doc whic is being created/changed
+  if (!this.isModified("password")) return next(); // only hash if password is new/changed
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Method to compare passwords
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  const isPasswordCorrect = await bcrypt.compare(
+    candidatePassword,
+    this.password
+  );
+  return isPasswordCorrect;
+};
 
 export default mongoose.model("User", userSchema);
