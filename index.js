@@ -2,19 +2,13 @@ import express from "express";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
-import path from "path";
-import { fileURLToPath } from "url";
 
 import connectDB from "./mongoDB/connect.js";
-import { loadModels } from "./mongoDB/models/modelsLoader.js";
+import { loadModules } from "./server/modulesLoader.js";
 
 // -------------------- Setup --------------------
-dotenv.config();
+dotenv.config({ silent: true });
 const app = express();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const modulesDir = path.join(__dirname, "server/modules");
 
 // -------------------- Middleware --------------------
 function setupMiddleware(app) {
@@ -33,10 +27,10 @@ app.get("/", (req, res) => res.json("Hello"));
 const startServer = async () => {
   try {
     // 1️⃣ Connect DB
-    await connectDB(process.env.MONGODB_URL);
+    await connectDB();
 
-    // 2️⃣ Load all modules (models + routes)
-    await loadModels(modulesDir, app);
+    // 2️⃣ Load all modules (models + controllers + services + routes)
+    await loadModules(app);
 
     // 3️⃣ Start server
     const PORT = process.env.PORT || 3001;
