@@ -28,8 +28,6 @@ const loadRelevantFile = async (file, folderPath, globalContainers) => {
   const nameKey = relevantFile[`${type}Name`];
   // ---> Eg. controllers[user-controller.js[controllerName]] = user-controller.js <---
   globalContainers[containerKey][nameKey] = relevantFile;
-
-  //   console.log(`✅ Loaded ${type}: ${nameKey}`);
 };
 
 export const loadModules = async (app) => {
