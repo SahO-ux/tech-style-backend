@@ -28,7 +28,7 @@ const stockSchema = new mongoose.Schema(
       ],
       default: [],
     },
-    updatedAt: Date,
+    date: { type: Date, required: true, default: Date.now },
   },
   { timestamps: true }
 );
